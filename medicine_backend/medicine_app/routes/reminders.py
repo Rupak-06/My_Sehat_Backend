@@ -100,3 +100,37 @@ def mark_dose_event(
     db.commit()
     db.refresh(event)
     return event
+
+@router.post("/reminders/{id}/mark", response_model=DoseEventSchema)
+def mark_reminder_status(
+    id: int,
+    status_update: DoseEventUpdate,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_user_id)
+):
+    # Reuse logic is fine, or just reimplement
+    event = db.query(DoseEvent).join(Medication).filter(
+        DoseEvent.id == id,
+        Medication.user_id == user_id
+    ).first()
+    
+    if not event:
+        raise HTTPException(status_code=404, detail="Reminder not found")
+        
+    if status_update.status not in ["TAKEN", "SKIPPED"]:
+         raise HTTPException(status_code=400, detail="Invalid status")
+
+    event.status = status_update.status
+    event.note = status_update.note
+    
+    from datetime import datetime
+    # Use strict UTC or handle timezone if needed, but requirements say Asia/Kolkata fixed
+    # For now, let's use the current time logic consistent with the app
+    event.updated_at = datetime.utcnow() # DB is usually UTC
+    
+    if status_update.status == "TAKEN":
+        event.taken_at = datetime.utcnow()
+        
+    db.commit()
+    db.refresh(event)
+    return event

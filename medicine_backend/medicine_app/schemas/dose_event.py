@@ -16,6 +16,8 @@ class DoseEvent(DoseEventBase):
     scheduled_at: datetime
     updated_at: datetime
     taken_at: Optional[datetime] = None
+    medication_name: Optional[str] = None
+    strength: Optional[str] = None
 
     class Config:
         from_attributes = True
